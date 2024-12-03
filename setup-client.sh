@@ -2,15 +2,31 @@
 
 # Check if script is run as root
 if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root"
-    exit 1
+   echo "Please run as root"
+   exit 1
 fi
 
 # Check if all arguments are provided
 if [ "$#" -ne 4 ]; then
-    echo "Usage: $0 <auth_secret> <url> <net_name> <name>"
-    echo "Example: $0 your_secret https://api.123.321 eth0 HK-Akile"
-    exit 1
+   echo "Usage: $0 <auth_secret> <url> <net_name> <name>"
+   echo "Example: $0 your_secret https://api.123.321 eth0 HK-Akile"
+   exit 1
+fi
+
+# Get system architecture
+ARCH=$(uname -m)
+CLIENT_FILE="akile_client-linux-amd64"
+
+# Set appropriate client file based on architecture
+if [ "$ARCH" = "x86_64" ]; then
+   CLIENT_FILE="akile_client-linux-amd64"
+elif [ "$ARCH" = "aarch64" ]; then
+   CLIENT_FILE="akile_client-linux-arm64"
+elif [ "$ARCH" = "x86_64" ] && [ "$(uname -s)" = "Darwin" ]; then
+   CLIENT_FILE="akile_client-darwin-amd64"
+else
+   echo "Unsupported architecture: $ARCH"
+   exit 1
 fi
 
 # Assign command line arguments to variables
@@ -24,7 +40,7 @@ mkdir -p /etc/ak_monitor/
 cd /etc/ak_monitor/
 
 # Download client
-wget -O client https://raw.githubusercontent.com/akile-network/akile_monitor/refs/heads/main/client/client
+wget -O client https://github.com/akile-network/akile_monitor/releases/latest/download/$CLIENT_FILE
 chmod 777 client
 
 # Create systemd service file
@@ -54,10 +70,10 @@ EOF
 # Create client configuration
 cat > /etc/ak_monitor/client.json << EOF
 {
-  "auth_secret": "${auth_secret}",
-  "url": "${url}",
-  "net_name": "${net_name}",
-  "name": "${monitor_name}"
+ "auth_secret": "${auth_secret}",
+ "url": "${url}",
+ "net_name": "${net_name}",
+ "name": "${monitor_name}"
 }
 EOF
 
