@@ -9,7 +9,7 @@ fi
 # Check if all arguments are provided
 if [ "$#" -ne 4 ]; then
     echo "Usage: $0 <auth_secret> <url> <net_name> <name>"
-    echo "Example: $0 your_secret https://api.cpu.red eth0 HK-Akile"
+    echo "Example: $0 your_secret https://api.123.321 eth0 HK-Akile"
     exit 1
 fi
 
