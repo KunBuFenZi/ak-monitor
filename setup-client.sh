@@ -60,7 +60,7 @@ LimitCORE=infinity
 LimitNOFILE=999999999
 WorkingDirectory=/etc/ak_monitor/
 ExecStart=/etc/ak_monitor/client
-Restart=on-failure
+Restart=always
 RestartSec=10
 
 [Install]
