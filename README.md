@@ -1,0 +1,1 @@
+wget -O setup-client.sh "https://raw.githubusercontent.com/KunBuFenZi/ak-monitor/refs/heads/main/setup-client.sh" && chmod +x setup-client.sh && sudo ./setup-client.sh your_secret https://api.cpu.red eth0 HK-Akile
