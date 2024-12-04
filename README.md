@@ -1,3 +1,9 @@
+# 本脚本已并入官方
+
+视频教程：
+<video src="https://pan.kbfz.top/d/Local/AK-monitor.mp4"></video>
+
+
 # 非官方demo：
 
 https://uptime.cpu.red
