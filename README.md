@@ -1,6 +1,6 @@
 ##主控后端
 
-···
+```
 wget -O setup-monitor.sh "https://raw.githubusercontent.com/KunBuFenZi/ak-monitor/refs/heads/main/setup-monitor.sh" && chmod +x setup-monitor.sh && sudo ./setup-monitor.sh
 ```
 
