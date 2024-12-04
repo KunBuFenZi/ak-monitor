@@ -1,4 +1,6 @@
-# 非官方demo：uptime.cpu.red
+# 非官方demo：
+
+https://uptime.cpu.red
 
 ## 前后端集合一键脚本
 
