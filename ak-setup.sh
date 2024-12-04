@@ -82,7 +82,7 @@ function update_client() {
 
 while true; do
    echo "============================================="
-   echo "AkileCloud Monitor Management Script"
+   echo "AkileCloud Monitor 管理脚本"
    echo "============================================="
    echo "1.安装主控后端"
    echo "2.卸载主控后端"
@@ -92,7 +92,7 @@ while true; do
    echo "6.卸载被控"
    echo "7.查看主控config"
    echo "8.更新被控"
-   echo "9. Exit"
+   echo "9.退出"
    echo "============================================="
    
    read -p "Please select an option (1-9): " choice
