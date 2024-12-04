@@ -90,7 +90,7 @@ while true; do
    echo "4.更新主控后端"
    echo "5.安装被控"
    echo "6.卸载被控"
-   echo "7.查看主控config"
+   echo "7.查看被控config"
    echo "8.更新被控"
    echo "9.退出"
    echo "============================================="
