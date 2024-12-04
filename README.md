@@ -23,10 +23,12 @@ https://github.com/akile-network/akile_monitor_fe/releases/download/v0.0.1/akile
 
 ### 2.修改config.json为自己的api地址（公网地址）（如果前端要加ssl 后端也要加ssl 且此处记得改为https和wss）
 
+```
 {
   "socket": "ws(s)://192.168.31.64:3000/ws",
   "apiURL": "http(s)://192.168.31.64:3000"
 }
+```
 
 ### 3.直接上传文件夹至cf pages
 
