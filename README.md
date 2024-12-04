@@ -1,7 +1,7 @@
 # 本脚本已并入官方
 
 视频教程：
-<video src="https://pan.kbfz.top/d/Local/AK-monitor.mp4"></video>
+https://pan.kbfz.top/d/Local/AK-monitor.mp4
 
 
 # 非官方demo：
