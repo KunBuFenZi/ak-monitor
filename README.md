@@ -7,7 +7,8 @@ https://uptime.cpu.red
 ```
 wget -O ak-setup.sh "https://raw.githubusercontent.com/KunBuFenZi/ak-monitor/refs/heads/main/ak-setup.sh" && chmod +x ak-setup.sh && sudo ./ak-setup.sh
 ```
-![image](https://github.com/user-attachments/assets/43379572-4f24-4e7e-9972-f5452c322640)
+
+![image](https://github.com/user-attachments/assets/e6585446-0a56-48bc-a71e-17e6dc9734e5)
 
 
 ## 主控后端
