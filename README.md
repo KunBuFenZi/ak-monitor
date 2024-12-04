@@ -1,3 +1,9 @@
+## 前后端集合一键脚本
+
+```
+wget -O ak-setup.sh "https://raw.githubusercontent.com/KunBuFenZi/ak-monitor/refs/heads/main/ak-setup.sh" && chmod +x ak-setup.sh && sudo ./ak-setup.sh
+```
+
 ## 主控后端
 
 ```
