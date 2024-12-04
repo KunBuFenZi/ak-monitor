@@ -6,6 +6,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Stop existing service if running
+systemctl stop ak_monitor
+
 # Get system architecture
 ARCH=$(uname -m)
 MONITOR_FILE="akile_monitor-linux-amd64"
