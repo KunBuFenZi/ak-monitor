@@ -81,9 +81,9 @@ function update_client() {
 }
 
 while true; do
-   echo "============================================="
-   echo "AkileCloud Monitor 管理脚本"
-   echo "============================================="
+   echo "=================================================="
+   echo "AkileCloud Monitor 管理脚本 Powered by KunBuFenZi"
+   echo "=================================================="
    echo "1.安装主控后端"
    echo "2.卸载主控后端"
    echo "3.查看主控config"
