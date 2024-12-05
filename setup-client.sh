@@ -28,11 +28,13 @@ systemctl stop ak_client
 # Function to detect main network interface
 get_main_interface() {
     # 使用数组保存网卡列表
-    mapfile -t interfaces < <(ip -o link show | \
-        awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
-        grep -v '@' | \
-        tr -d '\n ')
-    
+      mapfile -t interfaces < <(ip -o link show | \
+      awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
+      grep -v '@' | \
+      grep -v '^$' | \
+      tr -d '\n ')
+
+    
     format_bytes() {
         local bytes=$1
         if [ $bytes -lt 1024 ]; then
