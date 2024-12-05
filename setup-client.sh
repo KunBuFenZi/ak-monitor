@@ -1,53 +1,51 @@
 #!/bin/bash
-
-# Check if run as root
+# Check if script is run as root
 if [ "$EUID" -ne 0 ]; then
  echo "Please run as root"
  exit 1
 fi
 
-# Redirect all output to /dev/null and save original stdout
-exec 3>&1
-exec 1>/dev/null 2>&1
-
-# Install bc if not present
-if ! command -v bc > /dev/null; then
-   if command -v apt-get > /dev/null; then
-       apt-get update && apt-get install -y bc
-   elif command -v yum > /dev/null; then
-       yum update -y && yum install -y bc
-   fi
-fi
-
-# Restore original stdout
-exec 1>&3
-
-# Stop existing service
+# Stop existing service if running
 systemctl stop ak_client
 
 # Function to detect main network interface
 get_main_interface() {
+   # 检查是否安装了bc命令
+   if ! command -v bc > /dev/null; then
+       echo "Installing bc..."
+       if command -v apt-get > /dev/null; then
+           apt-get update && apt-get install -y bc
+       elif command -v yum > /dev/null; then
+           yum update -y && yum install -y bc
+       else
+           echo "Could not install bc. Please install it manually."
+           exit 1
+       fi
+   fi
+
    local interfaces=$(ip -o link show | \
-       awk -F': ' '$2 !~ /^(lo|warp|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
+       awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|warp|tap)/{print $2}' | \
        grep -v '@')
-   
+   
    local interface_count=$(echo "$interfaces" | wc -l)
-   
+   
+   # 格式化流量大小的函数
    format_bytes() {
        local bytes=$1
        if [ $bytes -lt 1024 ]; then
            echo "${bytes} B"
-       elif [ $bytes -lt 1048576 ]; then
+       elif [ $bytes -lt 1048576 ]; then # 1024*1024
            echo "$(echo "scale=2; $bytes/1024" | bc) KB"
-       elif [ $bytes -lt 1073741824 ]; then
+       elif [ $bytes -lt 1073741824 ]; then # 1024*1024*1024
            echo "$(echo "scale=2; $bytes/1024/1024" | bc) MB"
-       elif [ $bytes -lt 1099511627776 ]; then
+       elif [ $bytes -lt 1099511627776 ]; then # 1024*1024*1024*1024
            echo "$(echo "scale=2; $bytes/1024/1024/1024" | bc) GB"
        else
            echo "$(echo "scale=2; $bytes/1024/1024/1024/1024" | bc) TB"
        fi
    }
-   
+   
+   # 显示网卡流量的函数
    show_interface_traffic() {
        local interface=$1
        local rx_bytes=$(cat /sys/class/net/$interface/statistics/rx_bytes)
@@ -55,7 +53,8 @@ get_main_interface() {
        echo "   ↓ Received: $(format_bytes $rx_bytes)"
        echo "   ↑ Sent: $(format_bytes $tx_bytes)"
    }
-   
+   
+   # 如果没有找到合适的接口
    if [ -z "$interfaces" ]; then
        echo "No suitable physical network interfaces found." >&2
        echo "All available interfaces:" >&2
@@ -71,7 +70,8 @@ get_main_interface() {
        echo "$selected_interface"
        return
    fi
-   
+   
+   # 如果只有一个合适的接口，直接使用它
    if [ "$interface_count" -eq 1 ]; then
        echo "Using single available interface:" >&2
        echo "$interfaces" >&2
@@ -79,7 +79,8 @@ get_main_interface() {
        echo "$interfaces"
        return
    fi
-   
+   
+   # 如果有多个合适的接口，让用户选择
    echo "Multiple suitable interfaces found:" >&2
    echo "------------------------" >&2
    local i=1
@@ -94,17 +95,18 @@ get_main_interface() {
    echo "$selected_interface"
 }
 
-# Check arguments
+# Check if all arguments are provided
 if [ "$#" -ne 3 ]; then
  echo "Usage: $0 <auth_secret> <url> <name>"
  echo "Example: $0 your_secret wss://api.123.321 HK-Akile"
  exit 1
 fi
 
-# Get architecture
+# Get system architecture
 ARCH=$(uname -m)
 CLIENT_FILE="akile_client-linux-amd64"
 
+# Set appropriate client file based on architecture
 if [ "$ARCH" = "x86_64" ]; then
  CLIENT_FILE="akile_client-linux-amd64"
 elif [ "$ARCH" = "aarch64" ]; then
@@ -116,8 +118,8 @@ else
  exit 1
 fi
 
-# Set variables and clean auth_secret
-auth_secret=$(echo "$1" | tr -d '",')
+# Assign command line arguments to variables
+auth_secret="$1"
 url="$2"
 monitor_name="$3"
 
@@ -133,7 +135,7 @@ cd /etc/ak_monitor/
 wget -O client https://github.com/akile-network/akile_monitor/releases/latest/download/$CLIENT_FILE
 chmod 777 client
 
-# Create service file
+# Create systemd service file
 cat > /etc/systemd/system/ak_client.service << 'EOF'
 [Unit]
 Description=AkileCloud Monitor Service
@@ -151,13 +153,13 @@ LimitNOFILE=999999999
 WorkingDirectory=/etc/ak_monitor/
 ExecStart=/etc/ak_monitor/client
 Restart=always
-RestartSec=1
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Create config using cleaned auth_secret
+# Create client configuration
 cat > /etc/ak_monitor/client.json << EOF
 {
 "auth_secret": "${auth_secret}",
@@ -167,11 +169,11 @@ cat > /etc/ak_monitor/client.json << EOF
 }
 EOF
 
-# Set permissions
+# Set proper permissions
 chmod 644 /etc/ak_monitor/client.json
 chmod 644 /etc/systemd/system/ak_client.service
 
-# Start service
+# Reload systemd and enable service
 systemctl daemon-reload
 systemctl enable ak_client.service
 systemctl start ak_client.service
