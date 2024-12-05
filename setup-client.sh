@@ -27,12 +27,15 @@ systemctl stop ak_client
 
 # Function to detect main network interface
 get_main_interface() {
-    # 使用数组保存网卡
-    mapfile -t interfaces < <(ip -o link show | \
-        awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
-        grep -v '@' | \
-        grep -v '^$' | \
-        sed 's/^[[:space:]]*//')
+    # 先获取所有网卡（排除lo和一些虚拟网卡）
+    local interfaces=()
+    while IFS= read -r line; do
+        interface=$(echo "$line" | awk -F': ' '{print $2}' | sed 's/^[[:space:]]*//')
+        # 排除不需要的接口
+        if [[ ! $interface =~ ^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap) ]]; then
+            interfaces+=("$interface")
+        fi
+    done < <(ip -o link show)
     
     format_bytes() {
         local bytes=$1
@@ -48,7 +51,7 @@ get_main_interface() {
             echo "$(echo "scale=2; $bytes/1024/1024/1024/1024" | bc) TB"
         fi
     }
-    
+    
     show_interface_traffic() {
         local interface=$1
         local rx_bytes=$(cat /sys/class/net/$interface/statistics/rx_bytes)
@@ -56,23 +59,12 @@ get_main_interface() {
         echo "   ↓ Received: $(format_bytes $rx_bytes)"
         echo "   ↑ Sent: $(format_bytes $tx_bytes)"
     }
-    
+    
     if [ ${#interfaces[@]} -eq 0 ]; then
-        echo "No suitable physical network interfaces found." >&2
-        echo "All available interfaces:" >&2
-        echo "------------------------" >&2
-        while read -r interface; do
-            echo "$i) $interface" >&2
-            show_interface_traffic "$interface" >&2
-            i=$((i+1))
-        done < <(ip -o link show | grep -v "lo:" | awk -F': ' '{print $2}')
-        echo "------------------------" >&2
-        read -p "Please select interface number: " selection
-        selected_interface=$(ip -o link show | grep -v "lo:" | sed -n "${selection}p" | awk -F': ' '{print $2}')
-        echo "$selected_interface"
-        return
+        echo "No suitable network interfaces found." >&2
+        exit 1
     fi
-    
+    
     if [ ${#interfaces[@]} -eq 1 ]; then
         echo "Using single available interface:" >&2
         echo "${interfaces[0]}" >&2
@@ -80,7 +72,7 @@ get_main_interface() {
         echo "${interfaces[0]}"
         return
     fi
-    
+    
     echo "Multiple suitable interfaces found:" >&2
     echo "------------------------" >&2
     for i in "${!interfaces[@]}"; do
