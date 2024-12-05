@@ -28,11 +28,11 @@ systemctl stop ak_client
 # Function to detect main network interface
 get_main_interface() {
    local interfaces=$(ip -o link show | \
-       awk -F': ' '$2 !~ /^(docker|veth|br-|virbr|tun|warp|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
+       awk -F': ' '$2 !~ /^(lo|warp|docker|veth|br-|virbr|tun|bond|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
        grep -v '@')
-   
+   
    local interface_count=$(echo "$interfaces" | wc -l)
-   
+   
    format_bytes() {
        local bytes=$1
        if [ $bytes -lt 1024 ]; then
@@ -47,7 +47,7 @@ get_main_interface() {
            echo "$(echo "scale=2; $bytes/1024/1024/1024/1024" | bc) TB"
        fi
    }
-   
+   
    show_interface_traffic() {
        local interface=$1
        local rx_bytes=$(cat /sys/class/net/$interface/statistics/rx_bytes)
@@ -55,7 +55,7 @@ get_main_interface() {
        echo "   ↓ Received: $(format_bytes $rx_bytes)"
        echo "   ↑ Sent: $(format_bytes $tx_bytes)"
    }
-   
+   
    if [ -z "$interfaces" ]; then
        echo "No suitable physical network interfaces found." >&2
        echo "All available interfaces:" >&2
@@ -71,7 +71,7 @@ get_main_interface() {
        echo "$selected_interface"
        return
    fi
-   
+   
    if [ "$interface_count" -eq 1 ]; then
        echo "Using single available interface:" >&2
        echo "$interfaces" >&2
@@ -79,7 +79,7 @@ get_main_interface() {
        echo "$interfaces"
        return
    fi
-   
+   
    echo "Multiple suitable interfaces found:" >&2
    echo "------------------------" >&2
    local i=1
