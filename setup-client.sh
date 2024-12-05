@@ -28,7 +28,7 @@ systemctl stop ak_client
 # Function to detect main network interface
 get_main_interface() {
     local interfaces=$(ip -o link show | \
-        awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
+        awk -F': ' '$2 !~ /^(warp|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
         grep -v '@')
    
     local interface_count=$(echo "$interfaces" | wc -l)
