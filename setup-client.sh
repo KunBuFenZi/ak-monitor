@@ -32,7 +32,7 @@ get_main_interface() {
     while IFS= read -r line; do
         interface=$(echo "$line" | awk -F': ' '{print $2}' | sed 's/^[[:space:]]*//')
         # 排除不需要的接口
-        if [[ ! $interface =~ ^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap) ]]; then
+        if [[ ! $interface =~ ^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap) ]] && [[ -n "$interface" ]]; then
             interfaces+=("$interface")
         fi
     done < <(ip -o link show)
@@ -59,6 +59,14 @@ get_main_interface() {
         echo "   ↓ Received: $(format_bytes $rx_bytes)"
         echo "   ↑ Sent: $(format_bytes $tx_bytes)"
     }
+
+    echo "Available network interfaces:"
+    echo "------------------------"
+    for i in "${!interfaces[@]}"; do
+        echo "$((i+1))) ${interfaces[i]}"
+        show_interface_traffic "${interfaces[i]}"
+    done
+    echo "------------------------"
     
     if [ ${#interfaces[@]} -eq 0 ]; then
         echo "No suitable network interfaces found." >&2
@@ -66,22 +74,19 @@ get_main_interface() {
     fi
     
     if [ ${#interfaces[@]} -eq 1 ]; then
-        echo "Using single available interface:" >&2
-        echo "${interfaces[0]}" >&2
-        show_interface_traffic "${interfaces[0]}" >&2
+        echo "Using single available interface: ${interfaces[0]}"
         echo "${interfaces[0]}"
         return
     fi
+
+    read -p "Please select interface number [1-${#interfaces[@]}]: " selection
+    if [[ ! "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "${#interfaces[@]}" ]; then
+        echo "Invalid selection" >&2
+        exit 1
+    fi
     
-    echo "Multiple suitable interfaces found:" >&2
-    echo "------------------------" >&2
-    for i in "${!interfaces[@]}"; do
-        echo "$((i+1))) ${interfaces[i]}" >&2
-        show_interface_traffic "${interfaces[i]}" >&2
-    done
-    echo "------------------------" >&2
-    read -p "Please select interface number [1-${#interfaces[@]}]: " selection >&2
-    echo "${interfaces[$((selection-1))]}"
+    selected_interface="${interfaces[$((selection-1))]}"
+    echo "$selected_interface"
 }
 
 # Check arguments
