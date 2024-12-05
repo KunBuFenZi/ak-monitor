@@ -2,8 +2,8 @@
 
 # Check if run as root
 if [ "$EUID" -ne 0 ]; then
- echo "Please run as root"
- exit 1
+  echo "Please run as root"
+  exit 1
 fi
 
 # Redirect all output to /dev/null and save original stdout
@@ -12,11 +12,11 @@ exec 1>/dev/null 2>&1
 
 # Install bc if not present
 if ! command -v bc > /dev/null; then
-   if command -v apt-get > /dev/null; then
-       apt-get update && apt-get install -y bc
-   elif command -v yum > /dev/null; then
-       yum update -y && yum install -y bc
-   fi
+    if command -v apt-get > /dev/null; then
+        apt-get update && apt-get install -y bc
+    elif command -v yum > /dev/null; then
+        yum update -y && yum install -y bc
+    fi
 fi
 
 # Restore original stdout
@@ -27,78 +27,75 @@ systemctl stop ak_client
 
 # Function to detect main network interface
 get_main_interface() {
-   local interfaces=$(ip -o link show | \
-       awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|bond|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
-       grep -v '@')
-   
-   local interface_count=$(echo "$interfaces" | wc -l)
-   
-   format_bytes() {
-       local bytes=$1
-       if [ $bytes -lt 1024 ]; then
-           echo "${bytes} B"
-       elif [ $bytes -lt 1048576 ]; then
-           echo "$(echo "scale=2; $bytes/1024" | bc) KB"
-       elif [ $bytes -lt 1073741824 ]; then
-           echo "$(echo "scale=2; $bytes/1024/1024" | bc) MB"
-       elif [ $bytes -lt 1099511627776 ]; then
-           echo "$(echo "scale=2; $bytes/1024/1024/1024" | bc) GB"
-       else
-           echo "$(echo "scale=2; $bytes/1024/1024/1024/1024" | bc) TB"
-       fi
-   }
-   
-   show_interface_traffic() {
-       local interface=$1
-       local rx_bytes=$(cat /sys/class/net/$interface/statistics/rx_bytes)
-       local tx_bytes=$(cat /sys/class/net/$interface/statistics/tx_bytes)
-       echo "   ↓ Received: $(format_bytes $rx_bytes)"
-       echo "   ↑ Sent: $(format_bytes $tx_bytes)"
-   }
-   
-   if [ -z "$interfaces" ]; then
-       echo "No suitable physical network interfaces found." >&2
-       echo "All available interfaces:" >&2
-       echo "------------------------" >&2
-       while read -r interface; do
-           echo "$i) $interface" >&2
-           show_interface_traffic "$interface" >&2
-           i=$((i+1))
-       done < <(ip -o link show | grep -v "lo:" | awk -F': ' '{print $2}')
-       echo "------------------------" >&2
-       read -p "Please select interface number: " selection
-       selected_interface=$(ip -o link show | grep -v "lo:" | sed -n "${selection}p" | awk -F': ' '{print $2}')
-       echo "$selected_interface"
-       return
-   fi
-   
-   if [ "$interface_count" -eq 1 ]; then
-       echo "Using single available interface:" >&2
-       echo "$interfaces" >&2
-       show_interface_traffic "$interfaces" >&2
-       echo "$interfaces"
-       return
-   fi
-   
-   echo "Multiple suitable interfaces found:" >&2
-   echo "------------------------" >&2
-   local i=1
-   while read -r interface; do
-       echo "$i) $interface" >&2
-       show_interface_traffic "$interface" >&2
-       i=$((i+1))
-   done <<< "$interfaces"
-   echo "------------------------" >&2
-   read -p "Please select interface number [1-$interface_count]: " selection >&2
-   selected_interface=$(echo "$interfaces" | sed -n "${selection}p")
-   echo "$selected_interface"
+    # 使用数组保存网卡列表
+    mapfile -t interfaces < <(ip -o link show | \
+        awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|bond|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap|warp|none)/{print $2}' | \
+        grep -v '@' | \
+        tr -d '\n ')
+    
+    format_bytes() {
+        local bytes=$1
+        if [ $bytes -lt 1024 ]; then
+            echo "${bytes} B"
+        elif [ $bytes -lt 1048576 ]; then
+            echo "$(echo "scale=2; $bytes/1024" | bc) KB"
+        elif [ $bytes -lt 1073741824 ]; then
+            echo "$(echo "scale=2; $bytes/1024/1024" | bc) MB"
+        elif [ $bytes -lt 1099511627776 ]; then
+            echo "$(echo "scale=2; $bytes/1024/1024/1024" | bc) GB"
+        else
+            echo "$(echo "scale=2; $bytes/1024/1024/1024/1024" | bc) TB"
+        fi
+    }
+    
+    show_interface_traffic() {
+        local interface=$1
+        local rx_bytes=$(cat /sys/class/net/$interface/statistics/rx_bytes)
+        local tx_bytes=$(cat /sys/class/net/$interface/statistics/tx_bytes)
+        echo "   ↓ Received: $(format_bytes $rx_bytes)"
+        echo "   ↑ Sent: $(format_bytes $tx_bytes)"
+    }
+    
+    if [ ${#interfaces[@]} -eq 0 ]; then
+        echo "No suitable physical network interfaces found." >&2
+        echo "All available interfaces:" >&2
+        echo "------------------------" >&2
+        while read -r interface; do
+            echo "$i) $interface" >&2
+            show_interface_traffic "$interface" >&2
+            i=$((i+1))
+        done < <(ip -o link show | grep -v "lo:" | awk -F': ' '{print $2}')
+        echo "------------------------" >&2
+        read -p "Please select interface number: " selection
+        selected_interface=$(ip -o link show | grep -v "lo:" | sed -n "${selection}p" | awk -F': ' '{print $2}')
+        echo "$selected_interface"
+        return
+    fi
+    
+    if [ ${#interfaces[@]} -eq 1 ]; then
+        echo "Using single available interface:" >&2
+        echo "${interfaces[0]}" >&2
+        show_interface_traffic "${interfaces[0]}" >&2
+        echo "${interfaces[0]}"
+        return
+    fi
+    
+    echo "Multiple suitable interfaces found:" >&2
+    echo "------------------------" >&2
+    for i in "${!interfaces[@]}"; do
+        echo "$((i+1))) ${interfaces[i]}" >&2
+        show_interface_traffic "${interfaces[i]}" >&2
+    done
+    echo "------------------------" >&2
+    read -p "Please select interface number [1-${#interfaces[@]}]: " selection >&2
+    echo "${interfaces[$((selection-1))]}"
 }
 
 # Check arguments
 if [ "$#" -ne 3 ]; then
- echo "Usage: $0 <auth_secret> <url> <name>"
- echo "Example: $0 your_secret wss://api.123.321 HK-Akile"
- exit 1
+  echo "Usage: $0 <auth_secret> <url> <name>"
+  echo "Example: $0 your_secret wss://api.123.321 HK-Akile"
+  exit 1
 fi
 
 # Get architecture
@@ -106,14 +103,14 @@ ARCH=$(uname -m)
 CLIENT_FILE="akile_client-linux-amd64"
 
 if [ "$ARCH" = "x86_64" ]; then
- CLIENT_FILE="akile_client-linux-amd64"
+  CLIENT_FILE="akile_client-linux-amd64"
 elif [ "$ARCH" = "aarch64" ]; then
- CLIENT_FILE="akile_client-linux-arm64"
+  CLIENT_FILE="akile_client-linux-arm64"
 elif [ "$ARCH" = "x86_64" ] && [ "$(uname -s)" = "Darwin" ]; then
- CLIENT_FILE="akile_client-darwin-amd64"
+  CLIENT_FILE="akile_client-darwin-amd64"
 else
- echo "Unsupported architecture: $ARCH"
- exit 1
+  echo "Unsupported architecture: $ARCH"
+  exit 1
 fi
 
 # Set variables
@@ -151,7 +148,7 @@ LimitNOFILE=999999999
 WorkingDirectory=/etc/ak_monitor/
 ExecStart=/etc/ak_monitor/client
 Restart=always
-RestartSec=1
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
