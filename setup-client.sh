@@ -29,7 +29,7 @@ systemctl stop ak_client
 get_main_interface() {
     # 使用数组保存网卡列表
     mapfile -t interfaces < <(ip -o link show | \
-        awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|bond|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap|warp|none)/{print $2}' | \
+        awk -F': ' '$2 !~ /^(lo|docker|veth|br-|virbr|tun|vnet|wg|vmbr|dummy|gre|sit|vlan|lxc|lxd|tap)/{print $2}' | \
         grep -v '@' | \
         tr -d '\n ')
     
