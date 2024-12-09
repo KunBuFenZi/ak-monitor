@@ -1,4 +1,4 @@
-# 本脚本已并入官方
+# 本脚本已并入官方，此处不再更新
 
 视频教程：
 https://pan.kbfz.top/d/Local/AK-monitor.mp4
